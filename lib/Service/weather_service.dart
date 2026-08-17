@@ -1,53 +1,73 @@
 import 'dart:convert';
-import 'dart:io';
 
 import 'package:geolocator/geolocator.dart';
 import 'package:http/http.dart' as http;
 import 'package:weather_app/Model/weather.dart';
 
 class WeatherService {
-  //zeigt die aktuellen Wetterdaten in diesem Moment
-
   static Future<Weather> getWeatherData() async {
-    bool isLocationAvailable = await Geolocator.isLocationServiceEnabled();
+    final Position position = await _determinePosition();
 
-    if (!isLocationAvailable) {
-      return Future.error("Standortdienste sind deaktiviert.");
+    final String url =
+        "https://api.open-meteo.com/v1/forecast"
+        "?latitude=${position.latitude}&longitude=${position.longitude}"
+        "&daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max,wind_speed_10m_max,weather_code"
+        "&timezone=auto"
+        "&current=temperature_2m,wind_speed_10m,precipitation,weather_code,is_day";
+
+    http.Response response;
+    try {
+      response = await http.get(Uri.parse(url));
+    } catch (_) {
+      throw Exception(
+        "Der Wetterdienst ist nicht erreichbar. Bitte prüfe deine Internetverbindung.",
+      );
     }
 
-    LocationPermission locationPermission = await Geolocator.checkPermission();
-
-    if (locationPermission == LocationPermission.denied) {
-      locationPermission = await Geolocator.requestPermission();
-      if (locationPermission == LocationPermission.denied) {
-        return Future.error("Standortberechtigung wurde verweigert.");
-      }
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw Exception(
+        "Der Wetterdienst hat mit Status ${response.statusCode} geantwortet.",
+      );
     }
-
-    // Holt sich die aktuelle Position des Geräts
-    Position position = await Geolocator.getCurrentPosition(
-      locationSettings: LocationSettings(accuracy: LocationAccuracy.high),
-    );
-
-    String url =
-        "https://api.open-meteo.com/v1/forecast?latitude=${position.latitude}&longitude=${position.longitude}&daily=temperature_2m_max,temperature_2m_min,precipitation_probability_max,wind_speed_10m_max,weather_code&timezone=auto&current=temperature_2m,wind_speed_10m,precipitation,weather_code";
 
     try {
-      http.Response response = await http.get(Uri.parse(url));
-
-      print(response.body);
-
-      if (response.statusCode >= 200 && response.statusCode < 300) {
-        Map<String, dynamic> dataMap = jsonDecode(response.body);
-
-        Weather weather = Weather.fromMap(dataMap);
-        weather.location = await weather.getLocation();
-        return weather;
-      } else {
-        throw HttpException("Server Error: ${response.statusCode}");
-      }
-    } catch (e) {
-      throw HttpException("Fehler: $e");
+      final Map<String, dynamic> dataMap = jsonDecode(response.body);
+      final Weather weather = Weather.fromMap(dataMap);
+      weather.location = await weather.getLocation();
+      return weather;
+    } catch (_) {
+      throw Exception("Die Wetterdaten konnten nicht gelesen werden.");
     }
+  }
+
+  static Future<Position> _determinePosition() async {
+    final bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!serviceEnabled) {
+      throw Exception(
+        "Die Standortdienste sind deaktiviert. Bitte aktiviere sie in den Systemeinstellungen.",
+      );
+    }
+
+    LocationPermission permission = await Geolocator.checkPermission();
+
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+    }
+
+    if (permission == LocationPermission.deniedForever) {
+      throw Exception(
+        "Die Standortberechtigung wurde dauerhaft abgelehnt. Bitte erlaube den Zugriff in den App-Einstellungen.",
+      );
+    }
+
+    if (permission == LocationPermission.denied) {
+      throw Exception(
+        "Ohne Standortberechtigung kann das Wetter nicht geladen werden.",
+      );
+    }
+
+    return Geolocator.getCurrentPosition(
+      locationSettings: const LocationSettings(accuracy: LocationAccuracy.high),
+    );
   }
 }

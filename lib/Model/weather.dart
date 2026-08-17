@@ -9,6 +9,7 @@ class Weather {
   double precipitation = 0; // Niederschlag
   double windSpeed = 0;
   int weatherCode = 0;
+  bool isDay = true;
 
   Weather({
     required this.currentTime,
@@ -18,6 +19,7 @@ class Weather {
     required this.precipitation,
     required this.windSpeed,
     required this.weatherCode,
+    required this.isDay,
   });
 
   factory Weather.fromMap(Map<String, dynamic> map) {
@@ -29,6 +31,7 @@ class Weather {
       precipitation: map["current"]["precipitation"],
       windSpeed: map["current"]["wind_speed_10m"],
       weatherCode: map["current"]["weather_code"],
+      isDay: map["current"]["is_day"] == 1,
     );
   }
 
@@ -41,6 +44,7 @@ class Weather {
       "precipitation": precipitation,
       "wind_speed_10m": windSpeed,
       "weather_code": weatherCode,
+      "is_day": isDay ? 1 : 0,
     };
   }
 

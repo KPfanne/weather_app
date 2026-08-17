@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:intl/intl.dart';
+import 'package:weather_app/Model/weather.dart';
 import 'package:weather_app/Service/weather_service.dart';
 import 'package:weather_icons_animated/weather_icons_animated.dart';
 
@@ -10,8 +11,27 @@ void main() async {
   runApp(const MainApp());
 }
 
-class MainApp extends StatelessWidget {
+class MainApp extends StatefulWidget {
   const MainApp({super.key});
+
+  @override
+  State<MainApp> createState() => _MainAppState();
+}
+
+class _MainAppState extends State<MainApp> {
+  late Future<Weather> _weatherFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _weatherFuture = WeatherService.getWeatherData();
+  }
+
+  void _reload() {
+    setState(() {
+      _weatherFuture = WeatherService.getWeatherData();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -28,8 +48,8 @@ class MainApp extends StatelessWidget {
               ],
             ),
           ),
-          child: FutureBuilder(
-            future: WeatherService.getWeatherData(),
+          child: FutureBuilder<Weather>(
+            future: _weatherFuture,
             builder: (context, snapshot) {
               if (snapshot.hasError) {
                 print("FEHLER: ${snapshot.error}");
@@ -102,7 +122,7 @@ class MainApp extends StatelessWidget {
                               WeatherIcon(
                                 icon: WeatherIcons.fromOpenMeteoCode(
                                   snapshot.data!.weatherCode,
-                                  isDay: true,
+                                  isDay: snapshot.data!.isDay,
                                 ),
                                 size: cardSize * 0.7,
                               ),
@@ -152,13 +172,46 @@ class MainApp extends StatelessWidget {
                     },
                   ),
                 );
-              } else {
-                return const Center(
-                  child: Text("Ups, da ist was schief gelaufen!"),
-                );
               }
+              return _ErrorView(
+                message: "Es konnten keine Wetterdaten geladen werden.",
+                onRetry: _reload,
+              );
             },
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ErrorView extends StatelessWidget {
+  final String message;
+  final VoidCallback onRetry;
+
+  const _ErrorView({required this.message, required this.onRetry});
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.cloud_off, size: 64, color: Colors.white),
+            const SizedBox(height: 16),
+            Text(
+              message,
+              textAlign: TextAlign.center,
+              style: GoogleFonts.manrope(fontSize: 16, color: Colors.white),
+            ),
+            const SizedBox(height: 24),
+            FilledButton.tonal(
+              onPressed: onRetry,
+              child: const Text("Erneut versuchen"),
+            ),
+          ],
         ),
       ),
     );
