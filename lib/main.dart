@@ -51,9 +51,6 @@ class _MainAppState extends State<MainApp> {
           child: FutureBuilder<Weather>(
             future: _weatherFuture,
             builder: (context, snapshot) {
-              if (snapshot.hasError) {
-                print("FEHLER: ${snapshot.error}");
-              }
               if (snapshot.connectionState == ConnectionState.waiting) {
                 return Center(
                   child: Column(
@@ -174,7 +171,9 @@ class _MainAppState extends State<MainApp> {
                 );
               }
               return _ErrorView(
-                message: "Es konnten keine Wetterdaten geladen werden.",
+                message: snapshot.hasError
+                    ? snapshot.error.toString().replaceFirst("Exception: ", "")
+                    : "Es konnten keine Wetterdaten geladen werden.",
                 onRetry: _reload,
               );
             },
