@@ -17,12 +17,7 @@ Built as a practice project while learning Flutter, with the goal of chaining th
 
 ## Screenshots
 
-<!-- Screenshots hochladen und hier einbinden:
-     1. Ordner "screenshots" im Repo anlegen
-     2. PNGs per Drag & Drop auf GitHub hineinziehen
-     3. Zeile unten einkommentieren und Dateinamen anpassen -->
-
-<!-- <img src="screenshots/home.png" width="250"> -->
+<img src="screenshots/ReportView.png" width="250">
 
 ## How it works
 
