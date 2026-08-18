@@ -17,7 +17,7 @@ Built as a practice project while learning Flutter, with the goal of chaining th
 
 ## Screenshots
 
-<img src="screenshots/ReportView.png" width="250">
+<img src="screenshots/ReportView.PNG" width="250">
 
 ## How it works
 
